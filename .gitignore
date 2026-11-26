@@ -1,0 +1,17 @@
+# Compilación
+bin/
+obj/
+dist/
+distribucion/
+app/
+*.exe
+*.zip
+
+# Secretos y locales
+.env
+*token*.txt
+serper*.txt
+graphify-out/
+.impeccable/
+.vs/
+*.user
