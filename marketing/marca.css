@@ -1,0 +1,44 @@
+/* Línea gráfica Ojo Digital MediaLab: «Estudio técnico» (misma que od_web.css de las apps). */
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; src: url("fuentes/ibm-plex-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 500; src: url("fuentes/ibm-plex-sans-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; src: url("fuentes/ibm-plex-sans-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 700; src: url("fuentes/ibm-plex-sans-latin-700-normal.woff2") format("woff2"); }
+
+:root {
+  --bg: #f4f6f9; --panel: #ffffff; --texto: #1d232b; --texto2: #3b4148; --gris: #6b7480;
+  --acento: #009cde; --oscuro: #0077a8; --estado: #1b2430; --borde: #c3cad4; --suave: #d5dbe3;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1200px; height: 1200px; overflow: hidden; }
+body { font-family: "IBM Plex Sans", sans-serif; background: var(--bg); color: var(--texto); position: relative; }
+
+/* Encabezado blanco con logo y línea celeste, como en las apps */
+.encabezado { position: absolute; left: 0; top: 0; width: 1200px; height: 168px; background: #fff;
+  border-bottom: 3px solid var(--acento); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 72px; }
+.encabezado img { height: 112px; }
+.encabezado .lado { text-align: right; font-size: 24px; color: var(--gris); line-height: 1.35; }
+.encabezado .lado b { display: block; color: var(--texto); font-weight: 600; font-size: 30px; }
+
+h1 { position: absolute; left: 72px; top: 216px; font-size: 64px; line-height: 1.05; font-weight: 700;
+  letter-spacing: -.02em; }
+.bajada { position: absolute; left: 72px; top: 300px; font-size: 28px; color: var(--texto2); }
+
+/* Captura real con borde fino, sin sombra difusa */
+.captura { position: absolute; background: #fff; border: 1px solid var(--borde); border-radius: 4px; overflow: hidden;
+  box-shadow: 8px 8px 0 var(--suave); }
+.captura img { display: block; }
+
+/* Anotaciones técnicas (estilo cotas): texto, línea fina y punto sobre el elemento */
+.nota { position: absolute; left: 72px; display: flex; align-items: center; gap: 18px; height: 0; }
+.nota span { font-size: 25px; line-height: 1.25; color: var(--texto); white-space: nowrap; }
+.nota span small { display: block; font-size: 20px; color: var(--gris); }
+.nota i { flex: 1; border-top: 2px solid var(--acento); position: relative; }
+.nota i::after { content: ""; position: absolute; right: -7px; top: -8px; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--acento); }
+
+/* Barra de estado oscura, como la de las apps */
+.estado { position: absolute; left: 0; bottom: 0; width: 1200px; height: 96px; background: var(--estado);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 72px; color: #c9d2dc; font-size: 23px; }
+.estado b { color: #fff; font-weight: 600; }
+.estado .url { color: #5cc6f2; font-weight: 500; }
