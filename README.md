@@ -5,6 +5,8 @@ Gratis, en español, sin cuentas, sin internet y sin servidores de por medio.
 
 ### [⬇ Descargar el instalador para Windows](https://github.com/pafifo/espejo-celular/releases/latest)
 
+<img src="marketing/espejo-celular-1.png" width="420"> <img src="marketing/espejo-celular-2.png" width="420">
+
 ---
 
 ## Qué hace
