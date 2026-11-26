@@ -1,27 +1,59 @@
 # Espejo Celular
 
-App de Windows para ver un celular Android en pantalla y manejarlo con el mouse y el teclado del PC, por el wifi de la casa (sin internet, sin cuentas). Usa [scrcpy](https://github.com/Genymobile/scrcpy) (Apache 2.0) como motor y le pone encima una interfaz propia en español:
+**Tu celular Android en la pantalla del PC, manejado con el mouse y el teclado, por tu propio wifi.**
+Gratis, en español, sin cuentas, sin internet y sin servidores de por medio.
 
-- Vinculación por QR o código de 6 dígitos (depuración inalámbrica de Android 11+).
-- Recuerda el celular y lo encuentra solo en la red (mDNS), aunque cambie el puerto.
-- Opciones: siempre visible, apagar pantalla del celular, no bloquear, audio, grabar, calidad.
-- Guía paso a paso para activar el modo desarrollador (incluye Xiaomi, Samsung y Motorola).
+### [⬇ Descargar el instalador para Windows](https://github.com/pafifo/espejo-celular/releases/latest)
 
-## Compilar
+---
 
-Requiere .NET 8 SDK, NSIS y scrcpy instalado con `winget install Genymobile.scrcpy`.
+## Qué hace
+
+- Ves la pantalla del celular en una ventana del PC, en tiempo real.
+- La manejas con el mouse (clic = tocar, rueda = deslizar, clic derecho = atrás) y escribes con el teclado del PC.
+- Copiar y pegar entre el PC y el celular. Arrastra un `.apk` para instalarlo o un archivo para copiarlo.
+- Sonido del celular en el PC, grabación de la sesión en video, ventana siempre visible.
+- Se vincula **una sola vez** escaneando un código QR. Después, un botón: «Conectar y mostrar».
+- Encuentra el celular solo en la red, aunque cambie su IP o su puerto.
+
+## Requisitos
+
+- Windows 10 u 11 de 64 bits.
+- Android 11 o más nuevo.
+- PC y celular en el mismo wifi.
+
+## Cómo se usa
+
+1. Instala con el instalador (trae todo lo necesario).
+2. En el celular activa el **modo desarrollador** y la **depuración inalámbrica**. La app trae una guía paso a paso (Xiaomi, Samsung, Motorola y otros). En Xiaomi / Redmi / POCO activa también «Depuración USB (ajustes de seguridad)».
+3. En la app pulsa **«Vincular celular nuevo…»** y escanea el QR desde el celular (Depuración inalámbrica › Vincular dispositivo con código QR). También se puede con un código de 6 números.
+4. Pulsa **«Conectar y mostrar»**.
+
+> Windows puede avisar «Windows protegió su PC» porque el instalador no está firmado: «Más información» › «Ejecutar de todas formas».
+
+## Privacidad y seguridad
+
+Todo viaja directo entre tu celular y tu PC dentro de tu red. No hay cuentas, nube ni telemetría. Solo los PC que vinculaste pueden conectarse, y puedes apagar la depuración inalámbrica cuando no la uses.
+
+## Cómo funciona
+
+Espejo Celular es una interfaz en español sobre [scrcpy](https://github.com/Genymobile/scrcpy), el excelente proyecto libre de Genymobile, que hace la transmisión de video y el control. Espejo Celular agrega la vinculación por QR, la búsqueda automática del celular en la red (mDNS), las opciones en pantalla y la guía para dejar el celular listo.
+
+## Compilar desde el código
+
+Requiere .NET 8 SDK, NSIS y scrcpy (`winget install Genymobile.scrcpy`).
 
 ```powershell
 .\construir.ps1
 ```
 
-Deja `dist\` (app autónoma + scrcpy) y `distribucion\EspejoCelular-<versión>-instalador.exe`.
-
-El instalador pide administrador para instalar en Archivos de programa y abrir en el firewall el puerto UDP 5353 de adb (para encontrar el celular por mDNS).
-
-## Estructura
+Deja la app en `dist\` y el instalador en `distribucion\`.
 
 - `EspejoCelular\` código C# WinForms (`MainForm`, `VincularForm`, `GuiaForm`, `Adb`, `Config`).
-- `instalador.nsi` script NSIS.
-- `crear_icono.ps1` genera `icono.ico`.
-- `terceros\LICENCIA-scrcpy.txt` licencia de scrcpy que se copia en la instalación.
+- `instalador.nsi` instalador NSIS (instala en Archivos de programa y abre en el firewall el UDP 5353 de adb para mDNS).
+
+## Licencia
+
+MIT. scrcpy se incluye bajo Apache 2.0 (ver `terceros/LICENCIA-scrcpy.txt`).
+
+Hecho por Ojo Digital · [ODML](https://odml.cl).
