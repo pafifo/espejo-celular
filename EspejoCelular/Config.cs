@@ -36,11 +36,27 @@ public class Config
         return new Config();
     }
 
+    /// true solo cuando el usuario pulsó «Olvidar celular».
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Olvidado { get; set; }
+
     public void Guardar()
     {
         try
         {
             Directory.CreateDirectory(Carpeta);
+            // Nunca borrar el celular guardado por accidente (otra ventana, lectura fallida…):
+            // si aquí no hay celular y no se pidió olvidarlo, se conserva el que está en disco.
+            if (!Olvidado && Modelo == null && NombreMdns == null && UltimaDireccion == null && File.Exists(Archivo))
+            {
+                var enDisco = JsonSerializer.Deserialize<Config>(File.ReadAllText(Archivo));
+                if (enDisco != null)
+                {
+                    Modelo = enDisco.Modelo;
+                    NombreMdns = enDisco.NombreMdns;
+                    UltimaDireccion = enDisco.UltimaDireccion;
+                }
+            }
             File.WriteAllText(Archivo, JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch { }

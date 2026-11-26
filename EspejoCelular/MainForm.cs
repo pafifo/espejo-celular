@@ -200,6 +200,7 @@ public class MainForm : Form
         using var f = new VincularForm(adb, Icon);
         if (f.ShowDialog(this) == DialogResult.OK && f.Serial != null)
         {
+            cfg.Modelo = cfg.UltimaDireccion = null; // celular nuevo: reemplaza al anterior
             cfg.NombreMdns = f.NombreMdns;
             await Recordar(f.Serial);
             Registro("Celular vinculado: " + NombreCelular);
@@ -210,7 +211,9 @@ public class MainForm : Form
     void Olvidar()
     {
         cfg.Modelo = cfg.NombreMdns = cfg.UltimaDireccion = null;
+        cfg.Olvidado = true;
         cfg.Guardar();
+        cfg.Olvidado = false;
         Estado("Ningún celular vinculado", "Pulsa «Vincular celular nuevo…».", Gris);
         Registro("Celular olvidado en esta app (en el celular puedes quitar este PC en Depuración inalámbrica).");
     }

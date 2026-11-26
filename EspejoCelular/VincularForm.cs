@@ -29,54 +29,98 @@ public class VincularForm : Form
         StartPosition = FormStartPosition.Manual;
         Ventanas.CentrarSobreDueno(this);
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(560, 600);
+        ClientSize = new Size(560, 640);
         BackColor = Color.White;
 
-        var pasos = new Label
+        var negrita = new Font("Segoe UI Semibold", 10.5f);
+        Controls.Add(new Label
         {
-            Text = "En el celular (conectado al mismo wifi que este PC):\n" +
-                   "1. Ajustes › Opciones de desarrollador › Depuración inalámbrica: activar.\n" +
-                   "2. Toca «Vincular dispositivo con código QR» y escanea este código.",
-            Location = new Point(20, 16), Size = new Size(520, 70),
-        };
-        Controls.Add(pasos);
+            Text = "Paso 1 · En el celular (mismo wifi que este PC)", Font = negrita,
+            Location = new Point(20, 14), AutoSize = true,
+        });
+        Controls.Add(new Label
+        {
+            Text = "Abre Opciones de desarrollador › «Depuración inalámbrica», actívala y entra\n" +
+                   "a ella tocando su nombre.  (Xiaomi: Ajustes › Ajustes adicionales › Opciones\n" +
+                   "de desarrollador)",
+            Location = new Point(20, 38), Size = new Size(520, 62),
+        });
+        Controls.Add(new Label
+        {
+            Text = "Paso 2 · Elige UNA de estas dos formas", Font = negrita,
+            Location = new Point(20, 106), AutoSize = true,
+        });
 
-        var qr = new PictureBox
+        var pestanas = new TabControl { Location = new Point(20, 132), Size = new Size(520, 400) };
+
+        // --- Pestaña QR ---
+        var tabQr = new TabPage("Con código QR (recomendado)") { BackColor = Color.White };
+        tabQr.Controls.Add(new Label
         {
-            Location = new Point(150, 90), Size = new Size(260, 260),
+            Text = "En el celular toca «Vincular dispositivo con código QR» y apunta la\n" +
+                   "cámara a este código. No tienes que escribir nada aquí.",
+            Location = new Point(12, 10), Size = new Size(490, 46),
+        });
+        tabQr.Controls.Add(new PictureBox
+        {
+            Location = new Point(125, 62), Size = new Size(260, 260),
             SizeMode = PictureBoxSizeMode.Zoom, Image = CrearQr($"WIFI:T:ADB;S:{nombreQr};P:{claveQr};;"),
-        };
-        Controls.Add(qr);
-
-        var sep = new Label
+        });
+        tabQr.Controls.Add(new Label
         {
-            Text = "¿Sin cámara? Toca «Vincular dispositivo con código de sincronización»\n" +
-                   "y escribe aquí el código de 6 dígitos (la dirección es opcional):",
-            Location = new Point(20, 364), Size = new Size(520, 46),
+            Text = "Cuando lo escanee, se conecta solo.",
+            Location = new Point(12, 330), Size = new Size(490, 24), ForeColor = Color.DimGray,
+        });
+        pestanas.TabPages.Add(tabQr);
+
+        // --- Pestaña código ---
+        var tabCodigo = new TabPage("Con código de 6 números") { BackColor = Color.White };
+        tabCodigo.Controls.Add(new Label
+        {
+            Text = "1. En el celular toca «Vincular dispositivo con código de vinculación».\n" +
+                   "    Aparecen un código de 6 números y una dirección IP con puerto.\n" +
+                   "2. Deja esa ventana abierta en el celular.\n" +
+                   "3. Escribe aquí el código de 6 números y pulsa «Vincular».",
+            Location = new Point(12, 10), Size = new Size(490, 90),
+        });
+        tabCodigo.Controls.Add(new Label { Text = "Código de 6 números", Location = new Point(12, 112), AutoSize = true });
+        txtCodigo = new TextBox
+        {
+            Location = new Point(12, 136), Width = 200, MaxLength = 6,
+            Font = new Font("Segoe UI", 16f), TextAlign = HorizontalAlignment.Center,
         };
-        Controls.Add(sep);
-
-        Controls.Add(new Label { Text = "Código", Location = new Point(20, 420), AutoSize = true });
-        txtCodigo = new TextBox { Location = new Point(20, 444), Width = 120, MaxLength = 6 };
-        Controls.Add(txtCodigo);
-
-        Controls.Add(new Label { Text = "IP y puerto (opcional)", Location = new Point(155, 420), AutoSize = true });
-        txtDireccion = new TextBox { Location = new Point(155, 444), Width = 220, PlaceholderText = "192.168.1.50:37099" };
-        Controls.Add(txtDireccion);
-
-        btnCodigo = new Button { Text = "Vincular", Location = new Point(390, 442), Size = new Size(150, 32) };
+        tabCodigo.Controls.Add(txtCodigo);
+        btnCodigo = new Button { Text = "Vincular", Location = new Point(230, 136), Size = new Size(150, 40) };
         btnCodigo.Click += async (_, _) => await VincularConCodigo();
-        Controls.Add(btnCodigo);
+        tabCodigo.Controls.Add(btnCodigo);
+
+        tabCodigo.Controls.Add(new Label
+        {
+            Text = "Solo si después de unos segundos dice que no encuentra el celular,\n" +
+                   "copia también la «Dirección IP y puerto» que muestra esa ventana:",
+            Location = new Point(12, 200), Size = new Size(490, 46), ForeColor = Color.DimGray,
+        });
+        txtDireccion = new TextBox { Location = new Point(12, 250), Width = 240, PlaceholderText = "ej. 192.168.1.50:37099" };
+        tabCodigo.Controls.Add(txtDireccion);
+        pestanas.TabPages.Add(tabCodigo);
+
+        pestanas.SelectedIndexChanged += (_, _) =>
+        {
+            if (trabajando) return;
+            Estado(pestanas.SelectedTab == tabQr ? "Esperando que escanees el código QR…" : "Escribe el código de 6 números que muestra el celular.");
+            if (pestanas.SelectedTab == tabCodigo) txtCodigo.Focus();
+        };
+        Controls.Add(pestanas);
         AcceptButton = btnCodigo;
 
         estado = new Label
         {
-            Text = "Esperando que escanees el código…",
-            Location = new Point(20, 495), Size = new Size(520, 50), ForeColor = Color.DimGray,
+            Text = "Esperando que escanees el código QR…",
+            Location = new Point(20, 540), Size = new Size(520, 48), ForeColor = Color.DimGray,
         };
         Controls.Add(estado);
 
-        var cerrar = new Button { Text = "Cerrar", Location = new Point(440, 552), Size = new Size(100, 32), DialogResult = DialogResult.Cancel };
+        var cerrar = new Button { Text = "Cerrar", Location = new Point(440, 594), Size = new Size(100, 32), DialogResult = DialogResult.Cancel };
         Controls.Add(cerrar);
         CancelButton = cerrar;
 
