@@ -1,0 +1,50 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1200px; height: 1200px; overflow: hidden; }
+body {
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  color: #fff;
+  background:
+    radial-gradient(900px 700px at 85% 15%, rgba(96,165,250,.35), transparent 60%),
+    radial-gradient(800px 800px at 0% 100%, rgba(37,99,235,.45), transparent 60%),
+    linear-gradient(160deg, #0b1533 0%, #0f2a6b 55%, #1d4ed8 100%);
+  position: relative;
+}
+.grano { position: absolute; inset: 0; opacity: .06;
+  background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 22px 22px; }
+
+.pill { display: inline-flex; gap: 14px; align-items: center; font-size: 20px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: #bfdbfe;
+  border: 1.5px solid rgba(191,219,254,.35); border-radius: 999px; padding: 10px 22px; }
+.pill i { width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; display: inline-block; }
+
+h1 { font-size: 84px; line-height: 1.02; font-weight: 800; letter-spacing: -.025em; }
+h1 em { font-style: normal; color: #93c5fd; }
+.sub { font-size: 32px; line-height: 1.35; color: #dbeafe; font-weight: 400; }
+
+.pie { position: absolute; left: 72px; right: 72px; bottom: 56px; display: flex;
+  align-items: center; justify-content: space-between; font-size: 24px; color: #cbd5e1; }
+.marca { display: flex; align-items: center; gap: 16px; font-weight: 700; color: #fff; font-size: 30px; }
+.marca img { width: 52px; height: 52px; }
+.url { font-family: "Cascadia Code", Consolas, monospace; font-size: 22px; color: #bfdbfe;
+  background: rgba(255,255,255,.08); padding: 10px 18px; border-radius: 12px; }
+
+/* Ventana real de la app */
+.ventana { position: absolute; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 50px 90px rgba(2,6,23,.55), 0 0 0 1px rgba(255,255,255,.15); background: #fff; }
+.ventana img { display: block; }
+.tapa { position: absolute; background: #fff; }
+
+/* Celular dibujado */
+.cel { position: absolute; width: 300px; height: 620px; border-radius: 46px; background: #0b1020;
+  padding: 14px; box-shadow: 0 50px 90px rgba(2,6,23,.6), inset 0 0 0 2px #334155; }
+.pantalla { width: 100%; height: 100%; border-radius: 34px; overflow: hidden; position: relative;
+  background: linear-gradient(170deg, #f472b6 0%, #8b5cf6 45%, #2563eb 100%); }
+.hora { position: absolute; top: 58px; width: 100%; text-align: center; font-size: 64px; font-weight: 300; }
+.fecha { position: absolute; top: 138px; width: 100%; text-align: center; font-size: 18px; opacity: .85; }
+.apps { position: absolute; left: 22px; right: 22px; bottom: 34px; display: grid;
+  grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.apps b { aspect-ratio: 1; border-radius: 16px; background: rgba(255,255,255,.88); }
+.apps b:nth-child(4n+1) { background: #22c55e; } .apps b:nth-child(4n+2) { background: #f59e0b; }
+.apps b:nth-child(4n+3) { background: #fff; } .apps b:nth-child(4n) { background: #0ea5e9; }
+.camara { position: absolute; top: 26px; left: 50%; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; background: #0b1020; z-index: 2; }

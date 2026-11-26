@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="estilo.css">
+<style>
+  .texto { position: absolute; left: 72px; top: 72px; }
+  .texto h1 { margin-top: 30px; font-size: 76px; }
+  .pasos { position: absolute; left: 72px; right: 72px; top: 300px; height: 640px; display: grid;
+    grid-template-columns: 1fr 1.25fr 1fr; gap: 28px; align-items: stretch; }
+  .paso { background: rgba(255,255,255,.08); border: 1.5px solid rgba(191,219,254,.22);
+    border-radius: 28px; padding: 34px 30px; display: flex; flex-direction: column; }
+  .num { width: 58px; height: 58px; border-radius: 50%; background: #60a5fa; color: #0b1533;
+    font-size: 32px; font-weight: 800; display: grid; place-items: center; }
+  .paso h2 { font-size: 36px; font-weight: 700; margin-top: 22px; letter-spacing: -.01em; }
+  .paso p { font-size: 23px; line-height: 1.4; color: #dbeafe; margin-top: 12px; }
+  .visual { margin-top: auto; padding-top: 26px; display: grid; place-items: center; }
+  /* recorte de la captura real centrado en el QR */
+  .qr { width: 290px; height: 290px; border-radius: 22px; overflow: hidden; background: #fff;
+    position: relative; box-shadow: 0 30px 60px rgba(2,6,23,.45); }
+  .qr img { position: absolute; width: 628px; left: -167px; top: -280px; }
+  .req { position: absolute; left: 72px; right: 72px; top: 972px; text-align: center; font-size: 24px; color: #bfdbfe; }
+</style></head>
+<body>
+  <div class="grano"></div>
+  <div class="texto">
+    <span class="pill">Espejo Celular <i></i> Windows + Android</span>
+    <h1>Listo en <em>3 pasos</em></h1>
+  </div>
+
+  <div class="pasos">
+    <div class="paso">
+      <div class="num">1</div>
+      <h2>Instala</h2>
+      <p>Un instalador con todo incluido. Nada más que bajar.</p>
+      <div class="visual">
+        <svg width="190" height="190" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="3.5" width="19" height="13" rx="2"/><path d="M8 20.5h8M12 16.5v4"/>
+          <path d="M12 6.5v6M9.3 10l2.7 2.7 2.7-2.7"/></svg>
+      </div>
+    </div>
+    <div class="paso">
+      <div class="num">2</div>
+      <h2>Escanea el QR</h2>
+      <p>Desde la depuración inalámbrica del celular. Una sola vez.</p>
+      <div class="visual"><div class="qr"><img src="cap-qr.png"></div></div>
+    </div>
+    <div class="paso">
+      <div class="num">3</div>
+      <h2>Conecta</h2>
+      <p>Un botón y tu celular aparece en el PC, listo para usar con el mouse.</p>
+      <div class="visual">
+        <svg width="190" height="190" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>
+          <path d="M4 9a8 8 0 0 0 0 6M20 9a8 8 0 0 1 0 6" opacity=".7"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <p class="req">Windows 10 / 11 · Android 11 o superior · Mismo wifi · Sin cuentas ni nube</p>
+
+  <div class="pie">
+    <div class="marca"><img src="../EspejoCelular/icono-256.png"> Espejo Celular</div>
+    <span class="url">github.com/pafifo/espejo-celular</span>
+  </div>
+</body></html>
