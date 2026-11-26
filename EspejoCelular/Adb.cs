@@ -188,6 +188,31 @@ public class Adb
         return abiertas.ToList();
     }
 
+    /// Captura de pantalla del celular en resolución completa (PNG), sin pasar por la ventana.
+    public async Task<byte[]?> Captura(string serial)
+    {
+        var psi = new ProcessStartInfo(AdbExe, $"-s {serial} exec-out screencap -p")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        using var p = Process.Start(psi)!;
+        using var ms = new MemoryStream();
+        using var cts = new CancellationTokenSource(15000);
+        try
+        {
+            var err = p.StandardError.ReadToEndAsync();
+            await p.StandardOutput.BaseStream.CopyToAsync(ms, cts.Token);
+            await p.WaitForExitAsync(cts.Token);
+        }
+        catch { try { p.Kill(true); } catch { } return null; }
+        var b = ms.ToArray();
+        // Un PNG válido empieza con 89 50 4E 47
+        return b.Length > 8 && b[0] == 0x89 && b[1] == 0x50 ? b : null;
+    }
+
     public async Task<string> Propiedad(string serial, string prop)
     {
         var (_, salida) = await Ejecutar($"-s {serial} shell getprop {prop}", 8000);

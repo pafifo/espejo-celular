@@ -119,7 +119,7 @@ public class MainForm : Form
         chkApagar = Casilla(grupo, "Apagar la pantalla del celular mientras lo uso aquí", 52, cfg.ApagarPantalla);
         chkDespierto = Casilla(grupo, "No dejar que el celular se bloquee", 78, cfg.MantenerDespierto);
         chkAudio = Casilla(grupo, "Escuchar el sonido del celular en el PC", 104, cfg.Audio);
-        chkGrabar = Casilla(grupo, "Grabar la sesión en video (carpeta Videos)", 130, cfg.Grabar);
+        chkGrabar = Casilla(grupo, "Empezar a grabar apenas se abra el espejo", 130, cfg.Grabar);
         chkAuto = Casilla(grupo, "Conectar apenas abro la app", 156, cfg.ConectarAlAbrir);
         chkFijo = Casilla(grupo, "Encontrarlo siempre aunque cambie de IP (puerto fijo 5555)", 182, cfg.PuertoFijo);
         grupo.Controls.Add(new Label { Text = "Calidad:", Location = new Point(14, 210), AutoSize = true });
@@ -172,7 +172,7 @@ public class MainForm : Form
         tip.SetToolTip(chkApagar, "La pantalla del celular se apaga para ahorrar batería; lo sigues viendo y usando en el PC.");
         tip.SetToolTip(chkDespierto, "Mientras está el espejo abierto, el celular no se bloquea solo.");
         tip.SetToolTip(chkAudio, "El sonido del celular (videos, música, notificaciones) sale por los parlantes del PC. Las llamadas no.");
-        tip.SetToolTip(chkGrabar, "Graba en video todo lo que pasa en la pantalla del celular, en Videos\\Espejo Celular.");
+        tip.SetToolTip(chkGrabar, "Al abrir el espejo empieza a grabar solo. También puedes grabar cuando quieras con el botón «Grabar» de la barra sobre el espejo. Los videos quedan en Videos\\Espejo Celular.");
         tip.SetToolTip(chkAuto, "Al abrir la app se conecta sola, sin pulsar «Conectar y mostrar».");
         tip.SetToolTip(chkFijo, "Deja el celular escuchando en el puerto 5555 para encontrarlo aunque cambie de IP o Android apague la depuración inalámbrica. Se pierde al reiniciar el celular.");
         tip.SetToolTip(cmbCalidad, "Alta: más nítida, necesita buen wifi. Ahorro: para wifi lento o con cortes.");
@@ -528,13 +528,7 @@ public class MainForm : Form
             2 => new[] { "--max-size", "1024", "--video-bit-rate", "3M", "--max-fps", "30" },
             _ => new[] { "--max-size", "1600", "--video-bit-rate", "8M", "--max-fps", "60" },
         });
-        if (cfg.Grabar)
-        {
-            var carpeta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Espejo Celular");
-            Directory.CreateDirectory(carpeta);
-            a.Add("--record");
-            a.Add($"\"{Path.Combine(carpeta, $"Celular {DateTime.Now:yyyy-MM-dd HH.mm.ss}.mp4")}\"");
-        }
+        // La grabación va aparte (botón «Grabar» de la barra), para poder empezarla y pararla cuando uno quiera.
         return string.Join(" ", a);
     }
 
@@ -562,10 +556,12 @@ public class MainForm : Form
         }
         p.OutputDataReceived += (_, e) => Linea(e.Data);
         p.ErrorDataReceived += (_, e) => Linea(e.Data);
-        p.Exited += (_, _) => BeginInvoke(() =>
+        p.Exited += (_, _) => BeginInvoke(async () =>
         {
             var codigo = p.ExitCode;
             scrcpy = null;
+            CerrarBarra();
+            if (grabadora.Activa) await DetenerGrabacion();
             btnDetener.Enabled = false;
             btnConectar.Enabled = true;
             string err; lock (errores) err = errores.ToString();
@@ -585,13 +581,194 @@ public class MainForm : Form
         p.BeginOutputReadLine();
         p.BeginErrorReadLine();
         scrcpy = p;
+        serialEspejo = serial;
         btnDetener.Enabled = true;
         btnConectar.Enabled = false;
         Estado(NombreCelular, "Conectado por wifi · " + serial, Verde);
+        MontarBarra(p);
     }
 
     void CerrarEspejo()
     {
+        CerrarBarra();
+        if (grabadora.Activa) grabadora.DetenerYa();
         try { if (scrcpy is { HasExited: false }) scrcpy.Kill(true); } catch { }
+    }
+
+    // ---- Barra de captura / grabación / WhatsApp sobre la ventana del espejo ----
+
+    BarraEspejo? barra;
+    string? serialEspejo;
+    readonly Grabadora grabadora = new();
+    readonly System.Windows.Forms.Timer relojGrabacion = new() { Interval = 1000 };
+
+    async void MontarBarra(Process p)
+    {
+        // La ventana de scrcpy aparece unos segundos después de iniciar el proceso.
+        IntPtr hwnd = IntPtr.Zero;
+        for (int i = 0; i < 100 && hwnd == IntPtr.Zero; i++)
+        {
+            await Task.Delay(200);
+            if (scrcpy != p || p.HasExited) return;
+            hwnd = BarraEspejo.VentanaDe(p.Id);
+        }
+        if (hwnd == IntPtr.Zero) return;
+
+        CerrarBarra();
+        barra = new BarraEspejo(hwnd, cfg.SiempreVisible);
+        barra.Diag += s => BeginInvoke(() => Registro(s));
+        Registro("Barra lista sobre el espejo.");
+        barra.Captura.Click += async (_, _) => await Capturar(false);
+        barra.WhatsApp.Click += async (_, _) => await Capturar(true);
+        grabadora.Linea -= LineaGrabacion;
+        grabadora.Linea += LineaGrabacion;
+        barra.Grabar.Click += async (_, _) =>
+        {
+            try
+            {
+                if (!barra.Grabar.Enabled) return;
+                if (grabadora.Activa) await DetenerGrabacion(); else await IniciarGrabacion();
+            }
+            catch (Exception ex) { Registro("Error con la grabación: " + ex.Message); }
+        };
+        barra.Show();
+        PintarGrabacion();
+        if (cfg.Grabar && !grabadora.Activa) await IniciarGrabacion();
+    }
+
+    void LineaGrabacion(string l)
+    {
+        try { BeginInvoke(() => Registro(l)); } catch { }
+    }
+
+    void CerrarBarra()
+    {
+        var b = barra;
+        if (b != null) Registro("Cerrando la barra.");
+        barra = null;
+        try { if (b is { IsDisposed: false }) b.Close(); } catch { }
+    }
+
+    static string CarpetaCapturas
+    {
+        get
+        {
+            var c = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Espejo Celular");
+            Directory.CreateDirectory(c);
+            return c;
+        }
+    }
+
+    async Task Capturar(bool paraWhatsApp)
+    {
+        if (adb == null || serialEspejo == null || barra == null) return;
+        var boton = paraWhatsApp ? barra.WhatsApp : barra.Captura;
+        if (!boton.Enabled) return;
+        boton.Enabled = false;
+        var textoOriginal = boton.Texto;
+        boton.Texto = "Capturando…";
+        try
+        {
+            var png = await adb.Captura(serialEspejo);
+            if (png == null)
+            {
+                Registro("No se pudo sacar la captura del celular.");
+                boton.Texto = textoOriginal;
+                barra?.Avisar(boton, "No se pudo, reintenta");
+                return;
+            }
+            var archivo = Path.Combine(CarpetaCapturas, $"Captura {DateTime.Now:yyyy-MM-dd HH.mm.ss}.png");
+            await File.WriteAllBytesAsync(archivo, png);
+
+            using (var ms = new MemoryStream(png))
+            using (var img = new Bitmap(ms))
+            {
+                var datos = new DataObject();
+                datos.SetImage(new Bitmap(img));
+                datos.SetData("PNG", false, new MemoryStream(png));
+                Clipboard.SetDataObject(datos, true, 5, 100);
+            }
+            Registro("Captura copiada y guardada en " + archivo);
+            boton.Texto = textoOriginal;
+
+            if (!paraWhatsApp)
+            {
+                barra?.Avisar(boton, "Copiada ✓");
+                return;
+            }
+            AbrirWhatsApp();
+            barra?.Avisar(boton, "Elige el chat y pega con Ctrl+V", 6000);
+        }
+        catch (Exception ex)
+        {
+            Registro("Error al capturar: " + ex.Message);
+            boton.Texto = textoOriginal;
+        }
+        finally { if (!boton.IsDisposed) boton.Enabled = true; }
+    }
+
+    static void AbrirWhatsApp()
+    {
+        // WhatsApp de escritorio si está instalado; si no, WhatsApp Web en el navegador.
+        try { Process.Start(new ProcessStartInfo("whatsapp:") { UseShellExecute = true }); return; } catch { }
+        AbrirWeb("https://web.whatsapp.com");
+    }
+
+    async Task IniciarGrabacion()
+    {
+        if (adb == null || serialEspejo == null || barra == null) return;
+        barra.Grabar.Enabled = false;
+        barra.Grabar.Texto = "Iniciando…";
+        bool ok = await grabadora.Iniciar(adb.ScrcpyExe, serialEspejo, cfg.Calidad, cfg.Audio);
+        if (barra == null) { if (ok) await grabadora.Detener(); return; }
+        barra.Grabar.Enabled = true;
+        if (!ok)
+        {
+            Registro("Este celular no permitió grabar mientras se ve el espejo.");
+            PintarGrabacion();
+            barra.Avisar(barra.Grabar, "No se pudo grabar", 4000);
+            return;
+        }
+        Registro("Grabando en " + grabadora.Archivo);
+        relojGrabacion.Tick -= TicGrabacion;
+        relojGrabacion.Tick += TicGrabacion;
+        relojGrabacion.Start();
+        PintarGrabacion();
+    }
+
+    void TicGrabacion(object? s, EventArgs e) => PintarGrabacion();
+
+    async Task DetenerGrabacion()
+    {
+        relojGrabacion.Stop();
+        if (barra != null) { barra.Grabar.Enabled = false; barra.Grabar.Texto = "Guardando…"; }
+        var archivo = await grabadora.Detener();
+        if (barra != null) { barra.Grabar.Enabled = true; PintarGrabacion(); }
+        if (archivo == null) { Registro("La grabación no quedó guardada."); return; }
+        Registro("Video guardado: " + archivo);
+        if (barra != null) barra.Avisar(barra.Grabar, "Video guardado ✓", 3000);
+        // Mostrar el video recién grabado en el Explorador.
+        try { Process.Start("explorer.exe", $"/select,\"{archivo}\""); } catch { }
+    }
+
+    void PintarGrabacion()
+    {
+        if (barra == null) return;
+        var b = barra.Grabar;
+        if (grabadora.Activa)
+        {
+            var t = DateTime.Now - grabadora.Inicio;
+            b.Fondo = Rojo; b.Tinta = Color.White; b.Icono2 = Color.White; b.Contorno = null;
+            b.CambiarIcono("");
+            b.Texto = $"Detener {(int)t.TotalMinutes:00}:{t.Seconds:00}";
+            barra.Tip.SetToolTip(b, "Grabando. Clic para detener y guardar el video en Videos\\Espejo Celular.");
+        }
+        else
+        {
+            b.Fondo = Color.White; b.Tinta = Texto; b.Icono2 = Rojo; b.Contorno = Color.FromArgb(195, 202, 212);
+            b.CambiarIcono("");
+            b.Texto = "Grabar";
+            barra.Tip.SetToolTip(b, "Empieza a grabar en video la pantalla del celular, con sonido. Queda en Videos\\Espejo Celular.");
+        }
     }
 }

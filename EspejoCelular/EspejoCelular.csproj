@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>EspejoCelular</AssemblyName>
     <RootNamespace>EspejoCelular</RootNamespace>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Product>Espejo Celular</Product>
     <Company>ODML</Company>
     <ApplicationIcon>icono.ico</ApplicationIcon>
