@@ -320,6 +320,19 @@ public class MainForm : Form
         }
     }
 
+    /// Número de serie guardado o, si falta (vinculado con una versión anterior), el que trae el nombre «adb-<serie>-xxxx».
+    string? SerieEsperada
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(cfg.Serie)) return cfg.Serie;
+            var n = cfg.NombreMdns;
+            if (n == null || !n.StartsWith("adb-")) return null;
+            int i = n.LastIndexOf('-');
+            return i > 4 ? n[4..i] : null;
+        }
+    }
+
     bool EsMiNombre(string nombre) => PrefijoNombre is { } p && nombre.StartsWith(p, StringComparison.OrdinalIgnoreCase);
 
     /// Solo lo reconoce por nombre: una IP vieja puede ser hoy otro equipo.
@@ -343,9 +356,9 @@ public class MainForm : Form
             await adb.Desconectar(d.Serial);
 
         // Conectado con otra dirección (ej. puerto fijo): se reconoce por su número de serie.
-        if (cfg.Serie != null)
+        if (SerieEsperada != null)
             foreach (var d in listos)
-                if (await adb.Propiedad(d.Serial, "ro.serialno") == cfg.Serie) return d.Serial;
+                if (await adb.Propiedad(d.Serial, "ro.serialno") == SerieEsperada) return d.Serial;
 
         // 1) Rápido: la última IP en el puerto fijo.
         var ipVieja = cfg.UltimaDireccion is { } u && u.Contains(':') ? u[..u.LastIndexOf(':')] : null;
@@ -360,7 +373,7 @@ public class MainForm : Form
         // 2) Por su nombre en la red (mDNS).
         Estado(NombreCelular, "Buscando por su nombre en la red wifi…", Ambar);
         var probadas = new HashSet<string>();
-        var limite = DateTime.Now.AddSeconds(cfg.PuertoFijo && cfg.Serie != null ? 8 : 20);
+        var limite = DateTime.Now.AddSeconds(cfg.PuertoFijo && SerieEsperada != null ? 8 : 20);
         while (DateTime.Now < limite)
         {
             // Dos buscadores en paralelo: el de adb y uno propio.
@@ -390,7 +403,7 @@ public class MainForm : Form
         }
 
         // 3) Recorrer la red buscando el puerto fijo y confirmar por número de serie (aunque cambió de IP).
-        if (cfg.PuertoFijo && cfg.Serie != null)
+        if (cfg.PuertoFijo && SerieEsperada != null)
         {
             Estado(NombreCelular, "Recorriendo la red wifi…", Ambar);
             foreach (var ip in await Adb.BuscarPuertoEnRed(5555))
@@ -416,7 +429,7 @@ public class MainForm : Form
         for (int i = 0; i < 5; i++)
         {
             var serie = await adb.Propiedad(direccion, "ro.serialno");
-            if (serie == cfg.Serie) return true;
+            if (serie == SerieEsperada) return true;
             if (!string.IsNullOrEmpty(serie) && !serie.Contains("error") && !serie.Contains("unauthorized")) break;
             await Task.Delay(800);
         }
