@@ -471,6 +471,17 @@ public class MainForm : Form
                     "Revisa: mismo wifi y «Depuración inalámbrica» activada.", Rojo);
                 Registro("Sin conexión. Si el celular se reinició, vuelve a activar Depuración inalámbrica." +
                          " Si cambiaste de celular o de red, usa «Vincular celular nuevo…».");
+                MessageBox.Show(this,
+                    $"No encontré {NombreCelular} en el wifi.\n\n" +
+                    "Lo más común es que el celular se haya reiniciado o apagado. En ese caso:\n\n" +
+                    "  1. En el celular abre Ajustes › Opciones de desarrollador.\n" +
+                    "  2. Activa «Depuración inalámbrica».\n" +
+                    "  3. Aquí pulsa otra vez «Conectar y mostrar».\n\n" +
+                    "Después de conectar puedes volver a apagar la Depuración inalámbrica: " +
+                    "la app lo seguirá encontrando hasta el próximo reinicio del celular.\n\n" +
+                    "Si no es eso, revisa que el celular y el PC estén en el mismo wifi. " +
+                    "Si cambiaste de celular, usa «Vincular celular nuevo…».",
+                    "No encontré el celular", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
