@@ -58,4 +58,4 @@ Deja la app en `dist\` y el instalador en `distribucion\`.
 
 MIT. scrcpy se incluye bajo Apache 2.0 (ver `terceros/LICENCIA-scrcpy.txt`).
 
-Hecho por Ojo Digital · [ODML](https://odml.cl).
+Hecho por Ojo Digital · [ojodigital.cl](https://ojodigital.cl).

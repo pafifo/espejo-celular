@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 namespace EspejoCelular;
@@ -20,7 +20,21 @@ public class MainForm : Form
     static readonly Color Gris = Color.FromArgb(148, 163, 184);
     static readonly Color Ambar = Color.FromArgb(217, 119, 6);
     static readonly Color Rojo = Color.FromArgb(220, 38, 38);
-    static readonly Color Acento = Color.FromArgb(37, 99, 235);
+    // Línea gráfica Ojo Digital MediaLab
+    static readonly Color Celeste = Color.FromArgb(0, 156, 222);   // #009cde
+    static readonly Color Oscuro = Color.FromArgb(0, 119, 168);    // #0077a8
+    static readonly Color Texto = Color.FromArgb(29, 35, 43);      // #1d232b
+    static readonly Color Gris2 = Color.FromArgb(107, 116, 128);   // #6b7480
+    static readonly Color Acento = Oscuro;
+
+    const string SitioWeb = "https://ojodigital.cl";
+    const string Repositorio = "https://github.com/pafifo/espejo-celular";
+    static string Version => Application.ProductVersion.Split('+')[0];
+
+    static void AbrirWeb(string url)
+    {
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
+    }
 
     public MainForm()
     {
@@ -31,18 +45,31 @@ public class MainForm : Form
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(500, 690);
-        BackColor = Color.FromArgb(248, 250, 252);
+        BackColor = Color.FromArgb(244, 246, 249); // #f4f6f9
         try { Icon = new Icon(typeof(MainForm).Assembly.GetManifestResourceStream("EspejoCelular.icono.ico")!); } catch { }
 
-        Controls.Add(new Label
+        // Cabecera de la marca: blanca, logo Ojo Digital, nombre, versión y línea celeste.
+        var cabecera = new Panel { Location = new Point(0, 0), Size = new Size(500, 96), BackColor = Color.White };
+        cabecera.Paint += (_, e) => { using var b = new SolidBrush(Celeste); e.Graphics.FillRectangle(b, 0, 93, cabecera.Width, 3); };
+        var logo = new PictureBox { Location = new Point(18, 12), Size = new Size(98, 68), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
+        try { logo.Image = Image.FromStream(typeof(MainForm).Assembly.GetManifestResourceStream("EspejoCelular.logo.png")!); } catch { }
+        logo.Click += (_, _) => AbrirWeb(SitioWeb);
+        cabecera.Controls.Add(logo);
+        cabecera.Controls.Add(new Label
         {
             Text = "Espejo Celular", Font = new Font("Segoe UI Semibold", 17f),
-            Location = new Point(20, 14), AutoSize = true, ForeColor = Color.FromArgb(15, 23, 42),
+            Location = new Point(128, 14), AutoSize = true, ForeColor = Texto,
         });
-        Controls.Add(new Label
+        var lblVersion = new Label
         {
-            Text = "Tu celular en pantalla, manejado con el mouse y el teclado, por tu wifi.",
-            Location = new Point(22, 52), Size = new Size(460, 22), ForeColor = Color.DimGray,
+            Text = "v" + Version, Font = new Font("Segoe UI", 9f), ForeColor = Gris2,
+            AutoSize = true, Location = new Point(128, 0),
+        };
+        cabecera.Controls.Add(lblVersion);
+        cabecera.Controls.Add(new Label
+        {
+            Text = "Tu celular en pantalla, manejado con el mouse\ny el teclado, por tu wifi.",
+            Location = new Point(130, 50), Size = new Size(360, 40), ForeColor = Gris2, Font = new Font("Segoe UI", 9f),
         });
 
         // Tarjeta de estado
@@ -82,7 +109,7 @@ public class MainForm : Form
         btnOlvidar.Click += (_, _) => Olvidar();
         Controls.Add(btnOlvidar);
 
-        var guia = new LinkLabel { Text = "¿Primera vez? Cómo preparar el celular", Location = new Point(20, 268), AutoSize = true };
+        var guia = new LinkLabel { Text = "¿Primera vez? Cómo preparar el celular", Location = new Point(20, 268), AutoSize = true, LinkColor = Oscuro };
         guia.LinkClicked += (_, _) => { using var g = new GuiaForm(Icon); g.ShowDialog(this); };
         Controls.Add(guia);
 
@@ -116,6 +143,43 @@ public class MainForm : Form
         };
         Controls.Add(txtRegistro);
 
+        // Todo lo anterior baja para dejar sitio a la cabecera.
+        foreach (Control c in Controls) c.Top += 24;
+        Controls.Add(cabecera);
+        // La versión va al lado del nombre.
+        var nombre = cabecera.Controls[1];
+        lblVersion.Location = new Point(nombre.Right + 4, nombre.Top + 12);
+
+        // Pie con enlaces
+        var web = new LinkLabel { Text = "ojodigital.cl", Location = new Point(20, 704), AutoSize = true, LinkColor = Oscuro };
+        web.LinkClicked += (_, _) => AbrirWeb(SitioWeb);
+        var gh = new LinkLabel { Text = "Código y descargas en GitHub", Location = new Point(116, 704), AutoSize = true, LinkColor = Oscuro };
+        gh.LinkClicked += (_, _) => AbrirWeb(Repositorio);
+        var hecho = new Label { Text = "Ojo Digital MediaLab", Location = new Point(330, 704), Size = new Size(150, 20), TextAlign = ContentAlignment.TopRight, ForeColor = Gris2 };
+        Controls.AddRange(new Control[] { web, gh, hecho });
+        ClientSize = new Size(500, 734);
+
+        // Ayudas al pasar el mouse
+        var tip = new ToolTip { AutoPopDelay = 12000, InitialDelay = 400, ReshowDelay = 200 };
+        tip.SetToolTip(logo, "Ojo Digital MediaLab · abre ojodigital.cl");
+        tip.SetToolTip(lblVersion, "Versión instalada de Espejo Celular");
+        tip.SetToolTip(btnConectar, "Busca tu celular en el wifi y abre su pantalla en una ventana del PC.");
+        tip.SetToolTip(btnDetener, "Cierra la ventana del celular. El celular queda vinculado.");
+        tip.SetToolTip(btnVincular, "Primera vez o celular nuevo: lo vincula escaneando un código QR o con un código de 6 números.");
+        tip.SetToolTip(btnOlvidar, "Borra el celular guardado en esta app. Para usarlo de nuevo hay que vincularlo otra vez.");
+        tip.SetToolTip(guia, "Guía paso a paso para activar el modo desarrollador y la depuración inalámbrica.");
+        tip.SetToolTip(chkVisible, "La ventana del celular queda siempre encima de las otras ventanas.");
+        tip.SetToolTip(chkApagar, "La pantalla del celular se apaga para ahorrar batería; lo sigues viendo y usando en el PC.");
+        tip.SetToolTip(chkDespierto, "Mientras está el espejo abierto, el celular no se bloquea solo.");
+        tip.SetToolTip(chkAudio, "El sonido del celular (videos, música, notificaciones) sale por los parlantes del PC. Las llamadas no.");
+        tip.SetToolTip(chkGrabar, "Graba en video todo lo que pasa en la pantalla del celular, en Videos\\Espejo Celular.");
+        tip.SetToolTip(chkAuto, "Al abrir la app se conecta sola, sin pulsar «Conectar y mostrar».");
+        tip.SetToolTip(chkFijo, "Deja el celular escuchando en el puerto 5555 para encontrarlo aunque cambie de IP o Android apague la depuración inalámbrica. Se pierde al reiniciar el celular.");
+        tip.SetToolTip(cmbCalidad, "Alta: más nítida, necesita buen wifi. Ahorro: para wifi lento o con cortes.");
+        tip.SetToolTip(txtRegistro, "Registro de lo que hace la app. Sirve para ver por qué no conecta.");
+        tip.SetToolTip(web, "Abre ojodigital.cl");
+        tip.SetToolTip(gh, "Abre la página del proyecto en GitHub: código, novedades y nuevas versiones.");
+
         Shown += async (_, _) => await Iniciar();
         FormClosing += (_, _) => { GuardarOpciones(); CerrarEspejo(); };
     }
@@ -146,6 +210,14 @@ public class MainForm : Form
         if (IsDisposed) return;
         if (InvokeRequired) { BeginInvoke(() => Registro(texto)); return; }
         txtRegistro.AppendText($"{DateTime.Now:HH:mm:ss}  {texto}\r\n");
+        // Copia en disco para revisar fallas: %APPDATA%\EspejoCelular\registro.txt (máx. ~1 MB)
+        try
+        {
+            var arch = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EspejoCelular", "registro.txt");
+            if (File.Exists(arch) && new FileInfo(arch).Length > 1_000_000) File.Delete(arch);
+            File.AppendAllText(arch, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  v{Version}  {texto}\r\n");
+        }
+        catch { }
     }
 
     void Estado(string titulo, string detalle, Color color)
@@ -277,8 +349,13 @@ public class MainForm : Form
 
         // 1) Rápido: la última IP en el puerto fijo.
         var ipVieja = cfg.UltimaDireccion is { } u && u.Contains(':') ? u[..u.LastIndexOf(':')] : null;
-        if (cfg.PuertoFijo && ipVieja != null && await Adb.PuertoAbierto(ipVieja, 5555)
-            && await ConectarSiEsMio(ipVieja + ":5555")) return ipVieja + ":5555";
+        // El wifi del celular en ahorro de energía tarda en despertar: hasta 3 intentos.
+        if (cfg.PuertoFijo && ipVieja != null)
+            for (int i = 0; i < 3; i++)
+            {
+                if (await Adb.PuertoAbierto(ipVieja, 5555) && await ConectarSiEsMio(ipVieja + ":5555")) return ipVieja + ":5555";
+                await Task.Delay(500);
+            }
 
         // 2) Por su nombre en la red (mDNS).
         Estado(NombreCelular, "Buscando por su nombre en la red wifi…", Ambar);

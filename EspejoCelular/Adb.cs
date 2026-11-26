@@ -153,7 +153,7 @@ public class Adb
     /// Deja al celular escuchando también en el puerto fijo 5555 (dura hasta que se reinicia).
     public Task PuertoFijo(string serial) => Ejecutar($"-s {serial} tcpip 5555", 10000);
 
-    public static async Task<bool> PuertoAbierto(string ip, int puerto, int ms = 600)
+    public static async Task<bool> PuertoAbierto(string ip, int puerto, int ms = 2000)
     {
         using var c = new System.Net.Sockets.TcpClient();
         try { return await c.ConnectAsync(ip, puerto).WaitAsync(TimeSpan.FromMilliseconds(ms)).ContinueWith(t => !t.IsFaulted && c.Connected); }
@@ -182,7 +182,7 @@ public class Adb
         var tareas = redes.SelectMany(r => Enumerable.Range(1, 254).Select(async i =>
         {
             var ip = r + i;
-            if (await PuertoAbierto(ip, puerto, 700)) abiertas.Add(ip);
+            if (await PuertoAbierto(ip, puerto, 1500)) abiertas.Add(ip);
         }));
         await Task.WhenAll(tareas);
         return abiertas.ToList();
