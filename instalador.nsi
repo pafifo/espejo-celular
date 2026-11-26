@@ -51,6 +51,9 @@ Section "Instalar"
   ; Firewall: permitir que adb reciba los anuncios mDNS del celular (UDP 5353) para encontrarlo en la red
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Espejo Celular (buscar celular)"'
   nsExec::Exec 'netsh advfirewall firewall add rule name="Espejo Celular (buscar celular)" dir=in action=allow program="$INSTDIR\scrcpy\adb.exe" protocol=UDP localport=5353 profile=any'
+  ; Buscador propio de la app: recibe las respuestas mDNS del celular (UDP desde el puerto 5353)
+  nsExec::Exec 'netsh advfirewall firewall delete rule name="Espejo Celular (buscar por nombre)"'
+  nsExec::Exec 'netsh advfirewall firewall add rule name="Espejo Celular (buscar por nombre)" dir=in action=allow program="$INSTDIR\EspejoCelular.exe" protocol=UDP remoteport=5353 profile=any'
 
   ; Accesos directos para todos los usuarios
   SetShellVarContext all
@@ -74,6 +77,7 @@ Section "Uninstall"
   nsExec::Exec 'taskkill /F /IM scrcpy.exe'
   nsExec::Exec '"$INSTDIR\scrcpy\adb.exe" kill-server'
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Espejo Celular (buscar celular)"'
+  nsExec::Exec 'netsh advfirewall firewall delete rule name="Espejo Celular (buscar por nombre)"'
   SetShellVarContext all
   Delete "$SMPROGRAMS\${APP}.lnk"
   Delete "$DESKTOP\${APP}.lnk"

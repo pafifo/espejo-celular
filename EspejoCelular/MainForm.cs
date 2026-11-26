@@ -12,7 +12,7 @@ public class MainForm : Form
     readonly Label lblEstado, lblDetalle;
     readonly Panel punto;
     readonly Button btnConectar, btnDetener, btnVincular, btnOlvidar;
-    readonly CheckBox chkVisible, chkApagar, chkDespierto, chkAudio, chkAuto, chkGrabar;
+    readonly CheckBox chkVisible, chkApagar, chkDespierto, chkAudio, chkAuto, chkGrabar, chkFijo;
     readonly ComboBox cmbCalidad;
     readonly TextBox txtRegistro;
 
@@ -30,7 +30,7 @@ public class MainForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(500, 664);
+        ClientSize = new Size(500, 690);
         BackColor = Color.FromArgb(248, 250, 252);
         try { Icon = new Icon(typeof(MainForm).Assembly.GetManifestResourceStream("EspejoCelular.icono.ico")!); } catch { }
 
@@ -87,15 +87,16 @@ public class MainForm : Form
         Controls.Add(guia);
 
         // Opciones
-        var grupo = new GroupBox { Text = "Opciones", Location = new Point(20, 296), Size = new Size(460, 214) };
+        var grupo = new GroupBox { Text = "Opciones", Location = new Point(20, 296), Size = new Size(460, 240) };
         chkVisible = Casilla(grupo, "Ventana siempre visible (encima de las demás)", 26, cfg.SiempreVisible);
         chkApagar = Casilla(grupo, "Apagar la pantalla del celular mientras lo uso aquí", 52, cfg.ApagarPantalla);
         chkDespierto = Casilla(grupo, "No dejar que el celular se bloquee", 78, cfg.MantenerDespierto);
         chkAudio = Casilla(grupo, "Escuchar el sonido del celular en el PC", 104, cfg.Audio);
         chkGrabar = Casilla(grupo, "Grabar la sesión en video (carpeta Videos)", 130, cfg.Grabar);
         chkAuto = Casilla(grupo, "Conectar apenas abro la app", 156, cfg.ConectarAlAbrir);
-        grupo.Controls.Add(new Label { Text = "Calidad:", Location = new Point(14, 184), AutoSize = true });
-        cmbCalidad = new ComboBox { Location = new Point(84, 180), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList };
+        chkFijo = Casilla(grupo, "Encontrarlo siempre aunque cambie de IP (puerto fijo 5555)", 182, cfg.PuertoFijo);
+        grupo.Controls.Add(new Label { Text = "Calidad:", Location = new Point(14, 210), AutoSize = true });
+        cmbCalidad = new ComboBox { Location = new Point(84, 206), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList };
         cmbCalidad.Items.AddRange(new object[] { "Alta (nítida, wifi bueno)", "Media (recomendada)", "Ahorro (wifi lento)" });
         cmbCalidad.SelectedIndex = Math.Clamp(cfg.Calidad, 0, 2);
         cmbCalidad.SelectedIndexChanged += (_, _) => GuardarOpciones();
@@ -105,12 +106,12 @@ public class MainForm : Form
         Controls.Add(new Label
         {
             Text = "Clic = tocar · clic derecho = atrás · rueda = deslizar · Alt+H = inicio",
-            Location = new Point(20, 516), Size = new Size(460, 22), ForeColor = Color.DimGray, Font = new Font("Segoe UI", 8.5f),
+            Location = new Point(20, 542), Size = new Size(460, 22), ForeColor = Color.DimGray, Font = new Font("Segoe UI", 8.5f),
         });
 
         txtRegistro = new TextBox
         {
-            Location = new Point(20, 542), Size = new Size(460, 104), Multiline = true, ReadOnly = true,
+            Location = new Point(20, 568), Size = new Size(460, 104), Multiline = true, ReadOnly = true,
             ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 8.5f), BackColor = Color.White,
         };
         Controls.Add(txtRegistro);
@@ -135,6 +136,7 @@ public class MainForm : Form
         cfg.Audio = chkAudio.Checked;
         cfg.Grabar = chkGrabar.Checked;
         cfg.ConectarAlAbrir = chkAuto.Checked;
+        cfg.PuertoFijo = chkFijo.Checked;
         cfg.Calidad = cmbCalidad.SelectedIndex;
         cfg.Guardar();
     }
@@ -188,7 +190,7 @@ public class MainForm : Form
         if (string.IsNullOrEmpty(cfg.NombreMdns) && string.IsNullOrEmpty(cfg.UltimaDireccion))
             Estado("Ningún celular vinculado", "Pulsa «Vincular celular nuevo…» la primera vez.", Gris);
         else
-            Estado(NombreCelular, "Listo para conectar" + (cfg.UltimaDireccion != null ? $" · última vez en {cfg.UltimaDireccion}" : ""), Gris);
+            Estado(NombreCelular, "Listo para conectar. Lo busco por su nombre en la red.", Gris);
 
         if (cfg.ConectarAlAbrir && (cfg.NombreMdns != null || cfg.UltimaDireccion != null))
             await ConectarYMostrar();
@@ -200,7 +202,7 @@ public class MainForm : Form
         using var f = new VincularForm(adb, Icon);
         if (f.ShowDialog(this) == DialogResult.OK && f.Serial != null)
         {
-            cfg.Modelo = cfg.UltimaDireccion = null; // celular nuevo: reemplaza al anterior
+            cfg.Modelo = cfg.UltimaDireccion = cfg.Serie = null; // celular nuevo: reemplaza al anterior
             cfg.NombreMdns = f.NombreMdns;
             await Recordar(f.Serial);
             Registro("Celular vinculado: " + NombreCelular);
@@ -210,7 +212,7 @@ public class MainForm : Form
 
     void Olvidar()
     {
-        cfg.Modelo = cfg.NombreMdns = cfg.UltimaDireccion = null;
+        cfg.Modelo = cfg.NombreMdns = cfg.UltimaDireccion = cfg.Serie = null;
         cfg.Olvidado = true;
         cfg.Guardar();
         cfg.Olvidado = false;
@@ -225,49 +227,101 @@ public class MainForm : Form
         var nombre = await adb.Propiedad(serial, "ro.product.marketname");
         if (string.IsNullOrWhiteSpace(nombre)) nombre = await adb.Propiedad(serial, "ro.product.model");
         if (!string.IsNullOrWhiteSpace(nombre) && !nombre.Contains("error")) cfg.Modelo = nombre;
+        var serie = await adb.Propiedad(serial, "ro.serialno");
+        if (!string.IsNullOrWhiteSpace(serie) && !serie.Contains("error") && !serie.Contains(' ')) cfg.Serie = serie;
         if (serial.Contains(':')) cfg.UltimaDireccion = serial;
+        // Si adb lo conectó por su nombre mDNS («adb-XXXX-yyyy._adb-tls-connect._tcp»), se guarda el nombre.
+        if (serial.StartsWith("adb-") && serial.Contains("._adb")) cfg.NombreMdns = serial[..serial.IndexOf("._adb")];
         cfg.Guardar();
     }
 
-    bool EsElRecordado(string serial)
+    /// Parte fija del nombre mDNS: «adb-<número de serie>-». El final cambia a veces
+    /// (al reactivar la depuración), la serie no.
+    string? PrefijoNombre
     {
-        if (cfg.UltimaDireccion != null && serial == cfg.UltimaDireccion) return true;
-        if (cfg.NombreMdns != null && serial.StartsWith(cfg.NombreMdns)) return true;
-        if (cfg.UltimaDireccion != null && serial.Contains(':'))
+        get
         {
-            var ip = cfg.UltimaDireccion[..cfg.UltimaDireccion.LastIndexOf(':')];
-            if (serial.StartsWith(ip + ":")) return true;
+            var n = cfg.NombreMdns;
+            if (string.IsNullOrEmpty(n)) return null;
+            int i = n.LastIndexOf('-');
+            return n.StartsWith("adb-") && i > 4 ? n[..(i + 1)] : n;
         }
-        return false;
     }
 
-    /// Encuentra el celular: ya conectado, anunciado por mDNS en la red, o en la última dirección.
+    bool EsMiNombre(string nombre) => PrefijoNombre is { } p && nombre.StartsWith(p, StringComparison.OrdinalIgnoreCase);
+
+    /// Solo lo reconoce por nombre: una IP vieja puede ser hoy otro equipo.
+    bool EsElRecordado(string serial) =>
+        EsMiNombre(serial) || (PrefijoNombre == null && cfg.UltimaDireccion != null && serial == cfg.UltimaDireccion);
+
+    /// Encuentra el celular por su nombre en la red (mDNS), aunque haya cambiado de IP o de puerto.
     async Task<string?> EncontrarCelular()
     {
         if (adb == null) return null;
-        var hayRecordado = cfg.NombreMdns != null || cfg.UltimaDireccion != null;
+        var hayRecordado = cfg.NombreMdns != null || cfg.UltimaDireccion != null || cfg.Serie != null;
 
-        var listos = (await adb.Dispositivos()).Where(d => d.Listo).ToList();
+        var todos = await adb.Dispositivos();
+        var listos = todos.Where(d => d.Listo).ToList();
         var ya = listos.FirstOrDefault(d => EsElRecordado(d.Serial));
         if (ya != null) return ya.Serial;
         if (!hayRecordado && listos.Count == 1) return listos[0].Serial; // ej. conectado por cable
 
-        Estado(NombreCelular, "Buscando en la red wifi…", Ambar);
-        for (int intento = 0; intento < 4; intento++)
+        // Conexiones muertas a direcciones viejas: se sueltan para no quedar pegado a ellas.
+        foreach (var d in todos.Where(d => !d.Listo && d.Serial.Contains(':')))
+            await adb.Desconectar(d.Serial);
+
+        // Conectado con otra dirección (ej. puerto fijo): se reconoce por su número de serie.
+        if (cfg.Serie != null)
+            foreach (var d in listos)
+                if (await adb.Propiedad(d.Serial, "ro.serialno") == cfg.Serie) return d.Serial;
+
+        // 1) Rápido: la última IP en el puerto fijo.
+        var ipVieja = cfg.UltimaDireccion is { } u && u.Contains(':') ? u[..u.LastIndexOf(':')] : null;
+        if (cfg.PuertoFijo && ipVieja != null && await Adb.PuertoAbierto(ipVieja, 5555)
+            && await ConectarSiEsMio(ipVieja + ":5555")) return ipVieja + ":5555";
+
+        // 2) Por su nombre en la red (mDNS).
+        Estado(NombreCelular, "Buscando por su nombre en la red wifi…", Ambar);
+        var probadas = new HashSet<string>();
+        var limite = DateTime.Now.AddSeconds(cfg.PuertoFijo && cfg.Serie != null ? 8 : 20);
+        while (DateTime.Now < limite)
         {
-            var servicios = (await adb.ServiciosMdns()).Where(s => s.Tipo.StartsWith("_adb-tls-connect")).ToList();
-            var s = servicios.FirstOrDefault(x => x.Nombre == cfg.NombreMdns)
-                    ?? (hayRecordado ? null : servicios.FirstOrDefault());
-            if (s != null)
+            // Dos buscadores en paralelo: el de adb y uno propio.
+            var tAdb = adb.ServiciosMdns();
+            var tPropio = MdnsBuscador.Buscar(2500);
+            var servicios = (await tAdb).Concat(await tPropio)
+                .Where(s => s.Tipo.StartsWith("_adb-tls-connect")).ToList();
+
+            // adb a veces se conecta solo al verlo anunciado.
+            var auto = (await adb.Dispositivos()).FirstOrDefault(d => d.Listo && EsElRecordado(d.Serial));
+            if (auto != null) return auto.Serial;
+
+            var candidatos = servicios.Where(x => EsMiNombre(x.Nombre)).ToList();
+            if (!hayRecordado) candidatos = servicios;
+            foreach (var s in candidatos.Where(c => probadas.Add(c.Direccion)))
             {
-                Registro($"Encontrado en la red: {s.Direccion}");
+                Registro($"Encontrado por nombre ({s.Nombre}) en {s.Direccion}");
                 if (await adb.Conectar(s.Direccion))
                 {
-                    cfg.NombreMdns ??= s.Nombre;
+                    cfg.NombreMdns = s.Nombre; // por si cambió el final del nombre
                     return s.Direccion;
                 }
             }
-            await Task.Delay(1200);
+            if (servicios.Count > 0 && candidatos.Count == 0)
+                Registro("En la red hay otro celular con depuración, pero no es " + NombreCelular + ".");
+            await Task.Delay(500);
+        }
+
+        // 3) Recorrer la red buscando el puerto fijo y confirmar por número de serie (aunque cambió de IP).
+        if (cfg.PuertoFijo && cfg.Serie != null)
+        {
+            Estado(NombreCelular, "Recorriendo la red wifi…", Ambar);
+            foreach (var ip in await Adb.BuscarPuertoEnRed(5555))
+                if (await ConectarSiEsMio(ip + ":5555"))
+                {
+                    Registro($"Encontrado por su número de serie en {ip}");
+                    return ip + ":5555";
+                }
         }
 
         if (cfg.UltimaDireccion != null)
@@ -276,6 +330,54 @@ public class MainForm : Form
             if (await adb.Conectar(cfg.UltimaDireccion)) return cfg.UltimaDireccion;
         }
         return null;
+    }
+
+    /// Conecta a la dirección y la deja solo si es el celular recordado (mismo número de serie).
+    async Task<bool> ConectarSiEsMio(string direccion)
+    {
+        if (adb == null || !await adb.Conectar(direccion)) return false;
+        for (int i = 0; i < 5; i++)
+        {
+            var serie = await adb.Propiedad(direccion, "ro.serialno");
+            if (serie == cfg.Serie) return true;
+            if (!string.IsNullOrEmpty(serie) && !serie.Contains("error") && !serie.Contains("unauthorized")) break;
+            await Task.Delay(800);
+        }
+        await adb.Desconectar(direccion);
+        return false;
+    }
+
+    /// Deja el celular escuchando en el puerto fijo 5555 para encontrarlo la próxima vez
+    /// aunque Android apague la depuración inalámbrica o cambie la IP. Devuelve el serial a usar.
+    async Task<string> AsegurarPuertoFijo(string serial)
+    {
+        if (adb == null || !cfg.PuertoFijo || serial.EndsWith(":5555")) return serial;
+        var ip = serial.Contains(':') && !serial.StartsWith("adb-") ? serial[..serial.LastIndexOf(':')] : null;
+        if (ip == null)
+        {
+            var ruta = await adb.Ejecutar($"-s {serial} shell ip -4 -o addr show wlan0", 8000);
+            var m = System.Text.RegularExpressions.Regex.Match(ruta.Salida, @"inet (\d+\.\d+\.\d+\.\d+)");
+            if (!m.Success) return serial;
+            ip = m.Groups[1].Value;
+        }
+        if (!await Adb.PuertoAbierto(ip, 5555))
+        {
+            Registro("Activando el puerto fijo 5555 del celular (para encontrarlo siempre)…");
+            await adb.PuertoFijo(serial);
+            await Task.Delay(2500);
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            if (await adb.Conectar(ip + ":5555"))
+            {
+                var d = (await adb.Dispositivos()).FirstOrDefault(x => x.Serial == ip + ":5555");
+                if (d?.Listo == true) return ip + ":5555";
+            }
+            await Task.Delay(1000);
+        }
+        // No resultó: volver a la conexión original.
+        if (serial.Contains(':')) await adb.Conectar(serial);
+        return serial;
     }
 
     async Task ConectarYMostrar()
@@ -305,6 +407,8 @@ public class MainForm : Form
             }
 
             await Recordar(serial);
+            serial = await AsegurarPuertoFijo(serial);
+            if (serial.Contains(':') && !serial.StartsWith("adb-")) { cfg.UltimaDireccion = serial; cfg.Guardar(); }
             AbrirEspejo(serial);
         }
         finally { Ocupado(false); }

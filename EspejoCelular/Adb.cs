@@ -150,6 +150,44 @@ public class Adb
 
     public Task Desconectar(string serial) => Ejecutar($"disconnect {serial}", 8000);
 
+    /// Deja al celular escuchando también en el puerto fijo 5555 (dura hasta que se reinicia).
+    public Task PuertoFijo(string serial) => Ejecutar($"-s {serial} tcpip 5555", 10000);
+
+    public static async Task<bool> PuertoAbierto(string ip, int puerto, int ms = 600)
+    {
+        using var c = new System.Net.Sockets.TcpClient();
+        try { return await c.ConnectAsync(ip, puerto).WaitAsync(TimeSpan.FromMilliseconds(ms)).ContinueWith(t => !t.IsFaulted && c.Connected); }
+        catch { return false; }
+    }
+
+    /// IPs de la red local (cada /24 donde está el PC) que tienen abierto el puerto pedido.
+    public static async Task<List<string>> BuscarPuertoEnRed(int puerto)
+    {
+        var redes = new HashSet<string>();
+        foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+        {
+            if (nic.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
+            if (nic.NetworkInterfaceType is not (System.Net.NetworkInformation.NetworkInterfaceType.Wireless80211
+                or System.Net.NetworkInformation.NetworkInterfaceType.Ethernet)) continue;
+            var props = nic.GetIPProperties();
+            if (props.GatewayAddresses.Count == 0) continue; // solo redes reales (no VPN ni Hyper-V)
+            foreach (var u in props.UnicastAddresses)
+                if (u.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && u.PrefixLength >= 16)
+                {
+                    var b = u.Address.GetAddressBytes();
+                    redes.Add($"{b[0]}.{b[1]}.{b[2]}.");
+                }
+        }
+        var abiertas = new System.Collections.Concurrent.ConcurrentBag<string>();
+        var tareas = redes.SelectMany(r => Enumerable.Range(1, 254).Select(async i =>
+        {
+            var ip = r + i;
+            if (await PuertoAbierto(ip, puerto, 700)) abiertas.Add(ip);
+        }));
+        await Task.WhenAll(tareas);
+        return abiertas.ToList();
+    }
+
     public async Task<string> Propiedad(string serial, string prop)
     {
         var (_, salida) = await Ejecutar($"-s {serial} shell getprop {prop}", 8000);

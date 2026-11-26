@@ -16,7 +16,7 @@ Gratis, en español, sin cuentas, sin internet y sin servidores de por medio.
 - Copiar y pegar entre el PC y el celular. Arrastra un `.apk` para instalarlo o un archivo para copiarlo.
 - Sonido del celular en el PC, grabación de la sesión en video, ventana siempre visible.
 - Se vincula **una sola vez** escaneando un código QR. Después, un botón: «Conectar y mostrar».
-- Encuentra el celular solo en la red, aunque cambie su IP o su puerto.
+- Encuentra el celular solo en la red, aunque cambie su IP, su puerto o su MAC (Android cambia la MAC por privacidad y el router le da otra IP): lo busca por su nombre y, de respaldo, por su número de serie en el puerto fijo 5555.
 
 ## Requisitos
 
