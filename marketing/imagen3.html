@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="marca.css">
+<style>
+  .bloque { position: absolute; }
+  .bloque h2 { font-size: 34px; font-weight: 600; line-height: 1.1; }
+  .bloque p { font-size: 23px; line-height: 1.4; color: var(--texto2); margin-top: 10px; }
+  .version { display: inline-block; font-size: 22px; font-weight: 600; color: #fff; background: var(--oscuro);
+    border-radius: 4px; padding: 4px 12px; margin-bottom: 14px; }
+
+  .captura.barra { left: 72px; top: 560px; width: 330px; }
+  .captura.barra img { width: 330px; }
+  .lista { position: absolute; left: 440px; top: 560px; width: 220px; list-style: none; }
+  .lista li { position: absolute; left: 0; width: 230px; font-size: 22px; line-height: 1.3; color: var(--texto2); }
+  .lista li b { display: block; color: var(--texto); font-weight: 600; }
+
+  .captura.menu { left: 720px; top: 420px; width: 408px; }
+  .captura.menu img { width: 408px; }
+  .captura.reloj { left: 720px; top: 940px; width: 408px; }
+  .captura.reloj img { width: 408px; }
+</style></head>
+<body>
+  <header class="encabezado">
+    <img src="logo-ojodigital.png" alt="Ojo Digital MediaLab">
+    <div class="lado"><b>Espejo Celular</b>App gratuita para Windows</div>
+  </header>
+
+  <h1>Novedades</h1>
+  <p class="bajada">Botones junto al espejo y la app siempre a mano junto al reloj.</p>
+
+  <div class="bloque" style="left:72px; top:390px; width:600px">
+    <span class="version">1.0.6</span>
+    <h2>Captura, video y WhatsApp</h2>
+    <p>Una barra pegada a la ventana del celular.</p>
+  </div>
+  <div class="captura barra"><img src="cap-barra.png" alt=""></div>
+  <ul class="lista">
+    <li style="top:6px"><b>Copiar captura</b>al portapapeles, en resolución completa</li>
+    <li style="top:104px"><b>Grabar</b>video con sonido cuando quieras</li>
+    <li style="top:202px"><b>WhatsApp</b>copia la captura y abre el chat</li>
+  </ul>
+
+  <div class="bloque" style="left:72px; top:860px; width:600px">
+    <span class="version">1.0.7</span>
+    <h2>Vive junto al reloj</h2>
+    <p>La X esconde la ventana. Con clic derecho en el ícono están todas las opciones, y puede abrirse sola al iniciar Windows.</p>
+  </div>
+
+  <div class="captura menu"><img src="cap-menu-solo.png" alt=""></div>
+  <div class="captura reloj"><img src="cap-reloj.png" alt=""></div>
+
+  <footer class="estado">
+    <span><b>Gratis y de código abierto.</b> Descárgala en <span class="url">github.com/pafifo/espejo-celular</span></span>
+    <span>Android 11 o superior</span>
+  </footer>
+</body></html>
