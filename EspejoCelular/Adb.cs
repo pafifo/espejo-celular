@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 namespace EspejoCelular;
@@ -211,6 +211,24 @@ public class Adb
         var b = ms.ToArray();
         // Un PNG válido empieza con 89 50 4E 47
         return b.Length > 8 && b[0] == 0x89 && b[1] == 0x50 ? b : null;
+    }
+
+    /// Manda un archivo del PC al celular: los .apk se instalan; el resto queda en Descargas.
+    /// Devuelve null si salió bien, o el mensaje de error de adb.
+    public async Task<string?> Enviar(string serial, string archivo)
+    {
+        var nombre = Path.GetFileName(archivo);
+        if (archivo.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))
+        {
+            var (c, s) = await Ejecutar($"-s {serial} install -r \"{archivo}\"", 10 * 60_000);
+            return c == 0 && s.Contains("Success") ? null : s;
+        }
+        var destino = "/sdcard/Download/" + nombre;
+        var (codigo, salida) = await Ejecutar($"-s {serial} push \"{archivo}\" \"{destino}\"", 60 * 60_000);
+        if (codigo != 0) return salida;
+        // Avisar a Android para que aparezca enseguida en Galería / Archivos.
+        await Ejecutar($"-s {serial} shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Download/{Uri.EscapeDataString(nombre)}");
+        return null;
     }
 
     public async Task<string> Propiedad(string serial, string prop)

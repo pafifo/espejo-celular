@@ -1,4 +1,4 @@
-ESPEJO CELULAR
+﻿ESPEJO CELULAR
 ==============
 
 Muestra tu celular Android en la pantalla del PC y lo manejas con el mouse y el
@@ -20,11 +20,30 @@ PRIMERA VEZ (una sola vez por celular)
 CADA VEZ
 - Pulsa "Conectar y mostrar".
 
-CONTROLES
-- Clic = tocar. Clic derecho = atrás. Rueda = deslizar.
-- Alt+H = inicio. Alt+S = apps recientes. Alt+F o F11 = pantalla completa.
-- Ctrl+C / Ctrl+V comparten el portapapeles entre el PC y el celular.
-- Arrastra un archivo .apk a la ventana para instalarlo; otro archivo, para copiarlo.
+CONTROLES (en la ventana del celular; Alt = la tecla Alt de la izquierda)
+- Clic = tocar. Clic y arrastrar = deslizar. Rueda = subir y bajar.
+- Clic derecho = atrás. Clic en la rueda = inicio. Ctrl + arrastrar = zoom.
+- Alt+H inicio · Alt+B atrás · Alt+S apps recientes · Alt+P botón de encendido
+- Alt+N notificaciones · Alt+Flecha arriba/abajo volumen · Alt+R girar
+- Alt+O apaga la pantalla del celular (lo sigues viendo) · Alt+Mayús+O la prende
+- Alt+F pantalla completa · Alt+W ajusta la ventana al celular
+
+COPIAR Y PEGAR
+- Lo que copias en el celular queda también en el PC (Ctrl+C o Alt+C).
+- Ctrl+V (o Alt+V) pega en el celular lo que copiaste en el PC.
+- Alt+Mayús+V escribe el texto letra por letra, para apps que no dejan pegar.
+- Solo texto. Para imágenes usa "Copiar captura" o "Mandar archivo".
+
+BARRA JUNTO AL CELULAR
+- Copiar captura: foto de la pantalla al portapapeles (y a Imágenes\Espejo Celular).
+- Grabar: video con sonido, se detiene con el mismo botón (Videos\Espejo Celular).
+- WhatsApp: copia la captura y abre WhatsApp; elige el chat y pega con Ctrl+V.
+- Mandar archivo: elige archivos del PC y quedan en Descargas del celular.
+  Los .apk se instalan. También puedes arrastrarlos sobre la ventana o la barra.
+
+JUNTO AL RELOJ
+- La X esconde la ventana; la app queda como ícono junto al reloj.
+- Clic derecho en el ícono: todas las opciones, "Atajos y ayuda" y "Salir".
 
 INCLUYE
 scrcpy (https://github.com/Genymobile/scrcpy), programa libre de Genymobile

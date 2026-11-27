@@ -16,7 +16,9 @@ public class BarraEspejo : Form
     IntPtr gancho1, gancho2;
     readonly System.Windows.Forms.Timer respaldo = new() { Interval = 400 };
 
-    public readonly BotonBarra Captura, Grabar, WhatsApp;
+    public readonly BotonBarra Captura, Grabar, WhatsApp, Archivo;
+    /// Archivos soltados sobre la barra (arrastrados desde el Explorador).
+    public event Action<string[]>? Soltados;
     public readonly ToolTip Tip = new() { AutoPopDelay = 10000, InitialDelay = 300, ReshowDelay = 150 };
 
     static readonly Color Borde = Color.FromArgb(195, 202, 212); // #c3cad4
@@ -36,12 +38,22 @@ public class BarraEspejo : Form
         Captura = new BotonBarra("", "Copiar captura", Color.FromArgb(0, 119, 168), Color.White);
         Grabar = new BotonBarra("", "Grabar", Color.White, Color.FromArgb(29, 35, 43)) { Icono2 = Color.FromArgb(220, 38, 38), Contorno = Borde };
         WhatsApp = new BotonBarra("", "WhatsApp", Color.FromArgb(21, 128, 61), Color.White);
-        Controls.AddRange(new Control[] { Captura, Grabar, WhatsApp });
-        foreach (var b in new[] { Captura, Grabar, WhatsApp }) b.SizeChanged += (_, _) => Acomodar();
+        Archivo = new BotonBarra("", "Mandar archivo", Color.White, Color.FromArgb(29, 35, 43)) { Icono2 = Color.FromArgb(0, 119, 168), Contorno = Borde };
+        Controls.AddRange(new Control[] { Captura, Grabar, WhatsApp, Archivo });
+        foreach (var b in new[] { Captura, Grabar, WhatsApp, Archivo }) b.SizeChanged += (_, _) => Acomodar();
+
+        // Se pueden soltar archivos sobre la barra (igual que sobre la ventana del celular).
+        AllowDrop = true;
+        foreach (Control c in Controls) c.AllowDrop = true;
+        void Entrar(object? _, DragEventArgs e) => e.Effect = e.Data?.GetDataPresent(DataFormats.FileDrop) == true ? DragDropEffects.Copy : DragDropEffects.None;
+        void Soltar(object? _, DragEventArgs e) { if (e.Data?.GetData(DataFormats.FileDrop) is string[] r && r.Length > 0) Soltados?.Invoke(r); }
+        DragEnter += Entrar; DragDrop += Soltar;
+        foreach (Control c in Controls) { c.DragEnter += Entrar; c.DragDrop += Soltar; }
 
         Tip.SetToolTip(Captura, "Saca una foto de la pantalla del celular y la copia al portapapeles (pégala con Ctrl+V). También queda guardada en Imágenes\\Espejo Celular.");
         Tip.SetToolTip(Grabar, "Empieza o detiene la grabación en video de la pantalla del celular, con sonido. Queda en Videos\\Espejo Celular.");
         Tip.SetToolTip(WhatsApp, "Saca una captura, la copia y abre WhatsApp: elige el chat y pega con Ctrl+V.");
+        Tip.SetToolTip(Archivo, "Elige archivos del PC y los manda al celular: quedan en la carpeta Descargas. Los .apk se instalan. También puedes arrastrarlos y soltarlos aquí o sobre la ventana del celular.");
 
         alMoverse = (_, evento, hwnd, idObjeto, _, _, _) =>
         {

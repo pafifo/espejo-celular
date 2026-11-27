@@ -112,6 +112,9 @@ public partial class MainForm : Form
         var guia = new LinkLabel { Text = "¿Primera vez? Cómo preparar el celular", Location = new Point(20, 268), AutoSize = true, LinkColor = Oscuro };
         guia.LinkClicked += (_, _) => { using var g = new GuiaForm(Icon); g.ShowDialog(this); };
         Controls.Add(guia);
+        var ayuda = new LinkLabel { Text = "Atajos y ayuda", Location = new Point(330, 268), Size = new Size(150, 22), TextAlign = ContentAlignment.TopRight, LinkColor = Oscuro };
+        ayuda.LinkClicked += (_, _) => MostrarAyuda();
+        Controls.Add(ayuda);
 
         // Opciones
         var grupo = new GroupBox { Text = "Opciones", Location = new Point(20, 296), Size = new Size(460, 266) };
@@ -170,6 +173,7 @@ public partial class MainForm : Form
         tip.SetToolTip(btnDetener, "Cierra la ventana del celular. El celular queda vinculado.");
         tip.SetToolTip(btnVincular, "Primera vez o celular nuevo: lo vincula escaneando un código QR o con un código de 6 números.");
         tip.SetToolTip(btnOlvidar, "Borra el celular guardado en esta app. Para usarlo de nuevo hay que vincularlo otra vez.");
+        tip.SetToolTip(ayuda, "Teclas y clics para manejar el celular, copiar y pegar, mandar archivos y qué hacer si algo falla.");
         tip.SetToolTip(guia, "Guía paso a paso para activar el modo desarrollador y la depuración inalámbrica.");
         tip.SetToolTip(chkVisible, "La ventana del celular queda siempre encima de las otras ventanas.");
         tip.SetToolTip(chkApagar, "La pantalla del celular se apaga para ahorrar batería; lo sigues viendo y usando en el PC.");
@@ -187,6 +191,14 @@ public partial class MainForm : Form
         Shown += (_, _) => Arrancar();
         FormClosing += AlCerrar;
         CrearBandeja();
+    }
+
+    AyudaForm? ventanaAyuda;
+    void MostrarAyuda()
+    {
+        if (ventanaAyuda is { IsDisposed: false }) { ventanaAyuda.Activate(); return; }
+        ventanaAyuda = new AyudaForm(Icon);
+        ventanaAyuda.Show(Visible ? this : null);
     }
 
     CheckBox Casilla(GroupBox g, string texto, int y, bool valor)
@@ -626,6 +638,8 @@ public partial class MainForm : Form
         Registro("Barra lista sobre el espejo.");
         barra.Captura.Click += async (_, _) => await Capturar(false);
         barra.WhatsApp.Click += async (_, _) => await Capturar(true);
+        barra.Archivo.Click += async (_, _) => await ElegirYMandar();
+        barra.Soltados += async r => await MandarArchivos(r);
         grabadora.Linea -= LineaGrabacion;
         grabadora.Linea += LineaGrabacion;
         barra.Grabar.Click += async (_, _) =>
@@ -711,6 +725,71 @@ public partial class MainForm : Form
             boton.Texto = textoOriginal;
         }
         finally { if (!boton.IsDisposed) boton.Enabled = true; }
+    }
+
+    /// Abre el selector de archivos y manda los elegidos al celular.
+    async Task ElegirYMandar()
+    {
+        if (barra == null || !barra.Archivo.Enabled) return;
+        using var d = new OpenFileDialog
+        {
+            Title = "Elige los archivos que quieres mandar al celular",
+            Multiselect = true,
+            Filter = "Todos los archivos|*.*|Fotos y videos|*.jpg;*.jpeg;*.png;*.gif;*.webp;*.heic;*.mp4;*.mov|Documentos|*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.ppt;*.pptx;*.txt|Apps (.apk)|*.apk",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        };
+        if (d.ShowDialog(barra) != DialogResult.OK) return;
+        await MandarArchivos(d.FileNames);
+    }
+
+    /// Manda archivos del PC al celular: quedan en Descargas; los .apk se instalan.
+    async Task MandarArchivos(string[] rutas)
+    {
+        if (adb == null || serialEspejo == null || barra == null) return;
+        var boton = barra.Archivo;
+        if (!boton.Enabled) return;
+        var archivos = rutas.Where(File.Exists).ToArray();
+        if (archivos.Length == 0)
+        {
+            barra.Avisar(boton, "Solo archivos, no carpetas", 3500);
+            return;
+        }
+        boton.Enabled = false;
+        int buenos = 0, apks = 0;
+        try
+        {
+            for (int i = 0; i < archivos.Length; i++)
+            {
+                if (barra == null) return;
+                boton.Texto = archivos.Length == 1 ? "Enviando…" : $"Enviando {i + 1} de {archivos.Length}…";
+                var nombre = Path.GetFileName(archivos[i]);
+                bool esApk = nombre.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
+                if (esApk) boton.Texto = "Instalando app…";
+                var error = await adb.Enviar(serialEspejo, archivos[i]);
+                if (error == null)
+                {
+                    buenos++;
+                    if (esApk) apks++;
+                    Registro(esApk ? $"App instalada en el celular: {nombre}" : $"Enviado a Descargas del celular: {nombre}");
+                }
+                else Registro($"No se pudo mandar {nombre}: {error}");
+            }
+        }
+        catch (Exception ex) { Registro("Error al mandar archivos: " + ex.Message); }
+        finally
+        {
+            if (barra != null && !boton.IsDisposed)
+            {
+                boton.Enabled = true;
+                boton.Texto = "Mandar archivo";
+                string aviso = buenos == 0 ? "No se pudo mandar"
+                    : buenos < archivos.Length ? $"{buenos} de {archivos.Length} enviados"
+                    : apks == buenos ? (apks == 1 ? "App instalada ✓" : "Apps instaladas ✓")
+                    : apks > 0 ? "Listo ✓ (apps instaladas)"
+                    : "En Descargas del celular ✓";
+                barra.Avisar(boton, aviso, 4000);
+            }
+        }
     }
 
     static void AbrirWhatsApp()

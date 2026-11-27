@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 
 namespace EspejoCelular;
 
@@ -138,6 +138,11 @@ public partial class MainForm
             catch (Exception ex) { Registro("Error con la grabación: " + ex.Message); }
         };
 
+        var archivo = new ToolStripMenuItem("Mandar archivo al celular…") { ToolTipText = "Elige archivos del PC: quedan en Descargas del celular. Los .apk se instalan." };
+        archivo.Click += async (_, _) => await ElegirYMandar();
+        var ayuda = new ToolStripMenuItem("Atajos y ayuda") { ToolTipText = "Teclas y clics para manejar el celular, copiar y pegar y mandar archivos." };
+        ayuda.Click += (_, _) => MostrarAyuda();
+
         // Opciones: mismas casillas de la ventana (cambiar una cambia la otra).
         var opciones = new ToolStripMenuItem("Opciones");
         ToolStripMenuItem Opcion(CheckBox c, string tip)
@@ -182,8 +187,8 @@ public partial class MainForm
         menu.Items.AddRange(new ToolStripItem[]
         {
             abrir, new ToolStripSeparator(),
-            conectar, captura, whatsapp, grabar, new ToolStripSeparator(),
-            opciones, vincular, new ToolStripSeparator(),
+            conectar, captura, whatsapp, grabar, archivo, new ToolStripSeparator(),
+            opciones, vincular, ayuda, new ToolStripSeparator(),
             web, gh, new ToolStripSeparator(),
             new ToolStripMenuItem("v" + Version) { Enabled = false },
             salir,
@@ -196,7 +201,7 @@ public partial class MainForm
             bool hayEspejo = scrcpy != null;
             conectar.Text = hayEspejo ? "Cerrar espejo" : "Conectar y mostrar";
             conectar.Enabled = hayEspejo || btnConectar.Enabled;
-            captura.Enabled = whatsapp.Enabled = grabar.Enabled = barra != null;
+            captura.Enabled = whatsapp.Enabled = grabar.Enabled = archivo.Enabled = barra != null;
             grabar.Text = grabadora.Activa ? "Detener grabación" : "Grabar";
             foreach (ToolStripItem it in opciones.DropDownItems)
                 if (it is ToolStripMenuItem m && m.Tag is CheckBox c) m.Checked = c.Checked;
