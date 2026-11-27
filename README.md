@@ -15,6 +15,7 @@ Gratis, en español, sin cuentas, sin internet y sin servidores de por medio.
 - La manejas con el mouse (clic = tocar, rueda = deslizar, clic derecho = atrás) y escribes con el teclado del PC.
 - Copiar y pegar entre el PC y el celular. Arrastra un `.apk` para instalarlo o un archivo para copiarlo.
 - Sonido del celular en el PC y ventana siempre visible.
+- Queda como ícono junto al reloj: la X solo esconde la ventana; con clic derecho en el ícono están las opciones, la captura, la grabación y «Salir». Opción para abrirla al iniciar Windows.
 - Barra junto al espejo: **Copiar captura** (al portapapeles y a Imágenes), **Grabar** cuando quieras (video MP4 con sonido en Videos) y **WhatsApp** (copia la captura y abre WhatsApp para pegarla en el chat).
 - Se vincula **una sola vez** escaneando un código QR. Después, un botón: «Conectar y mostrar».
 - Encuentra el celular solo en la red, aunque cambie su IP, su puerto o su MAC (Android cambia la MAC por privacidad y el router le da otra IP): lo busca por su nombre y, de respaldo, por su número de serie en el puerto fijo 5555.

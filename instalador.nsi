@@ -1,4 +1,4 @@
-; Instalador de Espejo Celular (incluye scrcpy). Se compila con construir.ps1
+﻿; Instalador de Espejo Celular (incluye scrcpy). Se compila con construir.ps1
 Unicode true
 !include "MUI2.nsh"
 
@@ -40,6 +40,7 @@ VIAddVersionKey "LegalCopyright" "ODML. Incluye scrcpy (Apache 2.0, Genymobile)"
 Section "Instalar"
   ; Cerrar procesos de una versión anterior
   nsExec::Exec 'taskkill /F /IM EspejoCelular.exe'
+  nsExec::Exec 'taskkill /F /IM scrcpy.exe'
   nsExec::Exec '"$INSTDIR\scrcpy\adb.exe" kill-server'
 
   SetOutPath "$INSTDIR"
@@ -87,4 +88,6 @@ Section "Uninstall"
   Delete "$INSTDIR\Desinstalar.exe"
   RMDir "$INSTDIR"
   DeleteRegKey HKLM "${UNINST}"
+  ; Quitar «Abrir al iniciar Windows»
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Espejo Celular"
 SectionEnd

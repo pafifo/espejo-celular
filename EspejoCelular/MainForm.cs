@@ -3,7 +3,7 @@ using System.Text;
 
 namespace EspejoCelular;
 
-public class MainForm : Form
+public partial class MainForm : Form
 {
     readonly Config cfg = Config.Cargar();
     Adb? adb;
@@ -12,7 +12,7 @@ public class MainForm : Form
     readonly Label lblEstado, lblDetalle;
     readonly Panel punto;
     readonly Button btnConectar, btnDetener, btnVincular, btnOlvidar;
-    readonly CheckBox chkVisible, chkApagar, chkDespierto, chkAudio, chkAuto, chkGrabar, chkFijo;
+    readonly CheckBox chkVisible, chkApagar, chkDespierto, chkAudio, chkAuto, chkGrabar, chkFijo, chkInicio;
     readonly ComboBox cmbCalidad;
     readonly TextBox txtRegistro;
 
@@ -114,7 +114,7 @@ public class MainForm : Form
         Controls.Add(guia);
 
         // Opciones
-        var grupo = new GroupBox { Text = "Opciones", Location = new Point(20, 296), Size = new Size(460, 240) };
+        var grupo = new GroupBox { Text = "Opciones", Location = new Point(20, 296), Size = new Size(460, 266) };
         chkVisible = Casilla(grupo, "Ventana siempre visible (encima de las demás)", 26, cfg.SiempreVisible);
         chkApagar = Casilla(grupo, "Apagar la pantalla del celular mientras lo uso aquí", 52, cfg.ApagarPantalla);
         chkDespierto = Casilla(grupo, "No dejar que el celular se bloquee", 78, cfg.MantenerDespierto);
@@ -122,8 +122,11 @@ public class MainForm : Form
         chkGrabar = Casilla(grupo, "Empezar a grabar apenas se abra el espejo", 130, cfg.Grabar);
         chkAuto = Casilla(grupo, "Conectar apenas abro la app", 156, cfg.ConectarAlAbrir);
         chkFijo = Casilla(grupo, "Encontrarlo siempre aunque cambie de IP (puerto fijo 5555)", 182, cfg.PuertoFijo);
-        grupo.Controls.Add(new Label { Text = "Calidad:", Location = new Point(14, 210), AutoSize = true });
-        cmbCalidad = new ComboBox { Location = new Point(84, 206), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList };
+        chkInicio = new CheckBox { Text = "Abrir al iniciar Windows (queda junto al reloj)", Location = new Point(14, 208), AutoSize = true, Checked = InicioConWindows };
+        chkInicio.CheckedChanged += (_, _) => InicioConWindows = chkInicio.Checked;
+        grupo.Controls.Add(chkInicio);
+        grupo.Controls.Add(new Label { Text = "Calidad:", Location = new Point(14, 236), AutoSize = true });
+        cmbCalidad = new ComboBox { Location = new Point(84, 232), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList };
         cmbCalidad.Items.AddRange(new object[] { "Alta (nítida, wifi bueno)", "Media (recomendada)", "Ahorro (wifi lento)" });
         cmbCalidad.SelectedIndex = Math.Clamp(cfg.Calidad, 0, 2);
         cmbCalidad.SelectedIndexChanged += (_, _) => GuardarOpciones();
@@ -133,12 +136,12 @@ public class MainForm : Form
         Controls.Add(new Label
         {
             Text = "Clic = tocar · clic derecho = atrás · rueda = deslizar · Alt+H = inicio",
-            Location = new Point(20, 542), Size = new Size(460, 22), ForeColor = Color.DimGray, Font = new Font("Segoe UI", 8.5f),
+            Location = new Point(20, 568), Size = new Size(460, 22), ForeColor = Color.DimGray, Font = new Font("Segoe UI", 8.5f),
         });
 
         txtRegistro = new TextBox
         {
-            Location = new Point(20, 568), Size = new Size(460, 104), Multiline = true, ReadOnly = true,
+            Location = new Point(20, 594), Size = new Size(460, 104), Multiline = true, ReadOnly = true,
             ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 8.5f), BackColor = Color.White,
         };
         Controls.Add(txtRegistro);
@@ -151,13 +154,13 @@ public class MainForm : Form
         lblVersion.Location = new Point(nombre.Right + 4, nombre.Top + 12);
 
         // Pie con enlaces
-        var web = new LinkLabel { Text = "ojodigital.cl", Location = new Point(20, 704), AutoSize = true, LinkColor = Oscuro };
+        var web = new LinkLabel { Text = "ojodigital.cl", Location = new Point(20, 730), AutoSize = true, LinkColor = Oscuro };
         web.LinkClicked += (_, _) => AbrirWeb(SitioWeb);
-        var gh = new LinkLabel { Text = "Código y descargas en GitHub", Location = new Point(116, 704), AutoSize = true, LinkColor = Oscuro };
+        var gh = new LinkLabel { Text = "Código y descargas en GitHub", Location = new Point(116, 730), AutoSize = true, LinkColor = Oscuro };
         gh.LinkClicked += (_, _) => AbrirWeb(Repositorio);
-        var hecho = new Label { Text = "Ojo Digital MediaLab", Location = new Point(330, 704), Size = new Size(150, 20), TextAlign = ContentAlignment.TopRight, ForeColor = Gris2 };
+        var hecho = new Label { Text = "Ojo Digital MediaLab", Location = new Point(330, 730), Size = new Size(150, 20), TextAlign = ContentAlignment.TopRight, ForeColor = Gris2 };
         Controls.AddRange(new Control[] { web, gh, hecho });
-        ClientSize = new Size(500, 734);
+        ClientSize = new Size(500, 760);
 
         // Ayudas al pasar el mouse
         var tip = new ToolTip { AutoPopDelay = 12000, InitialDelay = 400, ReshowDelay = 200 };
@@ -173,6 +176,7 @@ public class MainForm : Form
         tip.SetToolTip(chkDespierto, "Mientras está el espejo abierto, el celular no se bloquea solo.");
         tip.SetToolTip(chkAudio, "El sonido del celular (videos, música, notificaciones) sale por los parlantes del PC. Las llamadas no.");
         tip.SetToolTip(chkGrabar, "Al abrir el espejo empieza a grabar solo. También puedes grabar cuando quieras con el botón «Grabar» de la barra sobre el espejo. Los videos quedan en Videos\\Espejo Celular.");
+        tip.SetToolTip(chkInicio, "Al prender el PC, Espejo Celular se abre solo y queda como ícono junto al reloj, sin mostrar la ventana.");
         tip.SetToolTip(chkAuto, "Al abrir la app se conecta sola, sin pulsar «Conectar y mostrar».");
         tip.SetToolTip(chkFijo, "Deja el celular escuchando en el puerto 5555 para encontrarlo aunque cambie de IP o Android apague la depuración inalámbrica. Se pierde al reiniciar el celular.");
         tip.SetToolTip(cmbCalidad, "Alta: más nítida, necesita buen wifi. Ahorro: para wifi lento o con cortes.");
@@ -180,8 +184,9 @@ public class MainForm : Form
         tip.SetToolTip(web, "Abre ojodigital.cl");
         tip.SetToolTip(gh, "Abre la página del proyecto en GitHub: código, novedades y nuevas versiones.");
 
-        Shown += async (_, _) => await Iniciar();
-        FormClosing += (_, _) => { GuardarOpciones(); CerrarEspejo(); };
+        Shown += (_, _) => Arrancar();
+        FormClosing += AlCerrar;
+        CrearBandeja();
     }
 
     CheckBox Casilla(GroupBox g, string texto, int y, bool valor)
@@ -226,6 +231,7 @@ public class MainForm : Form
         if (InvokeRequired) { BeginInvoke(() => Estado(titulo, detalle, color)); return; }
         lblEstado.Text = titulo;
         lblDetalle.Text = detalle;
+        if (bandeja != null) { var s = "Espejo Celular · " + titulo; bandeja.Text = s.Length > 63 ? s[..63] : s; }
         punto.Tag = color;
         punto.Invalidate();
     }
